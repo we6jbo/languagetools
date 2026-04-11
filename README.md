@@ -1,0 +1,11 @@
+# languagetools
+
+Public files for the LanguageTools project.
+
+## Publishing model
+- Public code and documentation live here.
+- Sensitive data should be kept out of this repository.
+- Local confidential material belongs in:     \	/opt/languagetools-confidential
+
+## Safety
+Before each publish, the local publish script performs basic checks for likely secrets and private material.

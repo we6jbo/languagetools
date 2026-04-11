@@ -1,0 +1,6 @@
+Generated: 2026-04-11 09:02:40 PDT
+Repo: https://github.com/we6jbo/languagetools.git
+Branch: main
+Current local commit: not_committed_yet
+Public source dir: /opt/languagetools
+Confidential dir: /opt/languagetools-confidential

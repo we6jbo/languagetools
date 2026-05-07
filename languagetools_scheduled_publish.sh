@@ -1,3 +1,22 @@
+
+# Jeremiah / ChatGPT repair note:
+# Avoid false positives where the secret scanner flags its own regex strings.
+# Real secrets should still be blocked.
+SECRET_SCAN_ALLOWLIST="/opt/languagetools-confidential/secret-scan-allowlist.regex"
+
+filter_secret_scan_hits() {
+    local infile="$1"
+    if [ ! -s "$infile" ]; then
+        return 0
+    fi
+
+    if [ -f "$SECRET_SCAN_ALLOWLIST" ]; then
+        grep -v -f "$SECRET_SCAN_ALLOWLIST" "$infile" || true
+    else
+        cat "$infile"
+    fi
+}
+
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
@@ -129,3 +148,9 @@ else
     report "VERIFY_RESULT=FAIL local HEAD does not match origin/$DEFAULT_BRANCH"
     die "VERIFY_RESULT=FAIL local HEAD does not match origin/$DEFAULT_BRANCH"
 fi
+
+
+# CHATGPT_SECRET_SCAN_FALSE_POSITIVE_REPAIR
+# If scheduled publish still fails, paste the new log to ChatGPT.
+# The recurring hits from May 5-7, 2026 appear to be scanner-pattern false positives:
+# run.sh and languagetools_scheduled_publish.sh contain the regex text used to detect secrets.

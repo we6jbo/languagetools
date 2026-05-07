@@ -1,4 +1,14 @@
 
+# CHATGPT_MAY7_PERSISTENT_RUNTIME_PATHS
+# Do not store durable workflow state in /tmp. /tmp can disappear after reboot.
+CONFIDENTIAL_DIR="/opt/languagetools-confidential"
+RUNTIME_DIR="$CONFIDENTIAL_DIR/runtime"
+PUBLISH_ROOT="$RUNTIME_DIR/languagetools-publish"
+PUBLISH_REPO="$PUBLISH_ROOT/repo"
+LOG_DIR="$RUNTIME_DIR/logs"
+mkdir -p "$PUBLISH_REPO" "$LOG_DIR"
+
+
 # Jeremiah / ChatGPT repair note:
 # Avoid false positives where the secret scanner flags its own regex strings.
 # Real secrets should still be blocked.

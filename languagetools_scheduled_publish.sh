@@ -20,14 +20,24 @@ filter_secret_scan_hits() {
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# CHATGPT_MAY7_PERSISTENT_RUNTIME_PATHS
+# Do not store durable workflow state in /tmp. /tmp can disappear after reboot.
+CONFIDENTIAL_DIR="/opt/languagetools-confidential"
+RUNTIME_DIR="$CONFIDENTIAL_DIR/runtime"
+PUBLISH_ROOT="$RUNTIME_DIR/languagetools-publish"
+PUBLISH_REPO="$PUBLISH_ROOT/repo"
+LOG_DIR="$RUNTIME_DIR/logs"
+mkdir -p "$PUBLISH_REPO" "$LOG_DIR"
+
+
 PROJECT_DIR="/opt/languagetools"
 REPO_URL="https://github.com/we6jbo/languagetools"
 DEFAULT_BRANCH="main"
-LOG_FILE="/tmp/a/languagetools-publish.log"
-REPORT_FILE="/tmp/a/languagetools-publish-report.txt"
-TMP_SCAN_FILE="/tmp/a/languagetools-publish-sensitive.txt"
+LOG_FILE="$LOG_DIR/languagetools-publish.log"
+REPORT_FILE="$LOG_DIR/languagetools-publish-report.txt"
+TMP_SCAN_FILE="$LOG_DIR/languagetools-publish-sensitive.txt"
 
-mkdir -p /tmp/a
+mkdir -p "$LOG_DIR"
 : > "$LOG_FILE"
 : > "$REPORT_FILE"
 : > "$TMP_SCAN_FILE"

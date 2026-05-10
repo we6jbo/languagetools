@@ -11,4 +11,4 @@ Public files for the LanguageTools project.
 Before each publish, the local publish script performs basic checks for likely secrets and private material.
 
 ---
-Last scheduled publish repair check: 2026-05-10 11:23:53 PDT
+Last scheduled publish repair check: 2026-05-10 11:24:02 PDT

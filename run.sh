@@ -246,18 +246,15 @@ check_local_git_repo() {
 scan_for_sensitive_content() {
     [ -d "$PROJECT_DIR" ] || return
 
-    local hitfile tmp_hits
+    local tmp_hits
     tmp_hits="$(mktemp)"
 
-    find "$PROJECT_DIR" \
-        -path "$PROJECT_DIR/.git" -prune -o \
-        -type f \( \
-            -iname '*.sh' -o -iname '*.py' -o -iname '*.txt' -o -iname '*.md' -o \
-            -iname '*.json' -o -iname '*.yaml' -o -iname '*.yml' -o -iname '*.ini' -o \
-            -iname '*.conf' -o -iname '*.cfg' -o -iname '*.service' -o -iname '*.desktop' \
-        \) -print 2>/dev/null | while read -r hitfile; do
-            grep -nE -H '(password\s*=|passwd\s*=|secret\s*=|api[_-]?key|token\s*=|authorization:|bearer |PRIVATE KEY|BEGIN RSA PRIVATE KEY|BEGIN OPENSSH PRIVATE KEY|client_secret|aws_access_key_id|aws_secret_access_key|-----BEGIN)' "$hitfile" 2>/dev/null
-        done > "$tmp_hits" || true
+    if [ -x "/opt/languagetools-may10/secret_scan_helper.sh" ]; then
+        /opt/languagetools-may10/secret_scan_helper.sh "$PROJECT_DIR" "$tmp_hits"
+    else
+        : > "$tmp_hits"
+        add_problem "Secret scan helper missing or not executable: /opt/languagetools-may10/secret_scan_helper.sh"
+    fi
 
     if [ -s "$tmp_hits" ]; then
         while IFS= read -r line; do
@@ -272,7 +269,6 @@ scan_for_sensitive_content() {
     fi
 
     rm -f "$tmp_hits"
-
     if find "$PROJECT_DIR" -type f \( -iname '*.pem' -o -iname '*.key' -o -iname 'id_rsa' -o -iname '.env' \) 2>/dev/null | grep -q .; then
         add_problem "High-risk secret-style filenames were found in the project tree"
         find "$PROJECT_DIR" -type f \( -iname '*.pem' -o -iname '*.key' -o -iname 'id_rsa' -o -iname '.env' \) 2>/dev/null | sed 's/^/HIGH_RISK_FILE: /' >> "$OUTFILE"

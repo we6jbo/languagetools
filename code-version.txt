@@ -1,4 +1,4 @@
-LanguageTools publish repair
-Run ID: 20260512-062846
-Time: 2026-05-12 06:28:49 PDT
-Source: /opt/languagetools
+last_publish_time=2026-05-12 06:48:46 PDT
+source_project_dir=/opt/languagetools
+source_host=we6jbo
+source_user=we6jbo

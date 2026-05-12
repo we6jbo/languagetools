@@ -1,5 +1,4 @@
-LanguageTools publish repair marker
-Time: Tue May 12 06:19:21 AM PDT 2026
-Host: we6jbo
-User: we6jbo
-Branch: main
+LanguageTools publish repair
+Run ID: 20260512-062452
+Time: 2026-05-12 06:24:56 PDT
+Source: /opt/languagetools

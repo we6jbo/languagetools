@@ -1,43 +1,32 @@
-
-# Jeremiah / ChatGPT repair note:
-# Avoid false positives where the secret scanner flags its own regex strings.
-# Real secrets should still be blocked.
-SECRET_SCAN_ALLOWLIST="/opt/languagetools-confidential/secret-scan-allowlist.regex"
-
-filter_secret_scan_hits() {
-    local infile="$1"
-    if [ ! -s "$infile" ]; then
-        return 0
-    fi
-
-    if [ -f "$SECRET_SCAN_ALLOWLIST" ]; then
-        grep -v -f "$SECRET_SCAN_ALLOWLIST" "$infile" || true
-    else
-        cat "$infile"
-    fi
-}
-
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# CHATGPT_MAY7_PERSISTENT_RUNTIME_PATHS
-# Do not store durable workflow state in /tmp. /tmp can disappear after reboot.
+# LanguageTools scheduled publish
+# Patched by ChatGPT for Jeremiah O'Neal
+# Fix:
+# - Shebang is first line.
+# - Scan /opt/languagetools.
+# - Sync public-safe files into durable publish repo.
+# - Commit, rebase, and push ONLY from the publish repo.
+# R80A3D995-T2Phal-002-252
+
 CONFIDENTIAL_DIR="/opt/languagetools-confidential"
 RUNTIME_DIR="$CONFIDENTIAL_DIR/runtime"
 PUBLISH_ROOT="$RUNTIME_DIR/languagetools-publish"
 PUBLISH_REPO="$PUBLISH_ROOT/repo"
 LOG_DIR="$RUNTIME_DIR/logs"
-mkdir -p "$PUBLISH_REPO" "$LOG_DIR"
-
 
 PROJECT_DIR="/opt/languagetools"
 REPO_URL="https://github.com/we6jbo/languagetools"
 DEFAULT_BRANCH="main"
+
 LOG_FILE="$LOG_DIR/languagetools-publish.log"
 REPORT_FILE="$LOG_DIR/languagetools-publish-report.txt"
 TMP_SCAN_FILE="$LOG_DIR/languagetools-publish-sensitive.txt"
+SECRET_SCAN_ALLOWLIST="$CONFIDENTIAL_DIR/secret-scan-allowlist.regex"
 
-mkdir -p "$LOG_DIR"
+mkdir -p "$PUBLISH_ROOT" "$LOG_DIR"
+
 : > "$LOG_FILE"
 : > "$REPORT_FILE"
 : > "$TMP_SCAN_FILE"
@@ -56,13 +45,27 @@ die() {
     exit 1
 }
 
+filter_secret_scan_hits() {
+    local infile="$1"
+
+    if [ ! -s "$infile" ]; then
+        return 0
+    fi
+
+    if [ -f "$SECRET_SCAN_ALLOWLIST" ]; then
+        grep -v -f "$SECRET_SCAN_ALLOWLIST" "$infile" || true
+    else
+        cat "$infile"
+    fi
+}
+
 scan_project() {
     : > "$TMP_SCAN_FILE"
 
     local p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13
     local secret_re pii_re
+    local filtered1 filtered2
 
-    # Build sensitive-pattern regex in pieces so the scanner does not block itself.
     p1='pass''word[[:space:]]*[:=]'
     p2='pass''wd[[:space:]]*[:=]'
     p3='sec''ret[[:space:]]*[:=]'
@@ -97,13 +100,18 @@ scan_project() {
         grep -nE -H "$pii_re" "$file" >> "$TMP_SCAN_FILE" 2>/dev/null || true
     done < <(find "$PROJECT_DIR" -type f ! -path '*/.git/*' | sort)
 
-    # Keep the scan active, but remove known false positives from scanner-code files.
     if [ -s "$TMP_SCAN_FILE" ]; then
-        FILTERED_SCAN_FILE="${TMP_SCAN_FILE}.filtered"
+        filtered1="${TMP_SCAN_FILE}.filtered1"
+        filtered2="${TMP_SCAN_FILE}.filtered2"
+
+        filter_secret_scan_hits "$TMP_SCAN_FILE" > "$filtered1" || true
+
         grep -vE \
-            '(/opt/languagetools/languagetools_scheduled_publish\.sh:[0-9]+:.*(p[0-9]+=|secret_re=|pii_re=)|/opt/languagetools/run\.sh:[0-9]+:.*grep -nE -H)' \
-            "$TMP_SCAN_FILE" > "$FILTERED_SCAN_FILE" || true
-        mv "$FILTERED_SCAN_FILE" "$TMP_SCAN_FILE"
+            '(/opt/languagetools/languagetools_scheduled_publish\.sh:[0-9]+:.*(p[0-9]+=|secret_re=|pii_re=|SECRET_SCAN_ALLOWLIST=|filter_secret_scan_hits)|/opt/languagetools/run\.sh:[0-9]+:.*grep -nE -H)' \
+            "$filtered1" > "$filtered2" || true
+
+        mv "$filtered2" "$TMP_SCAN_FILE"
+        rm -f "$filtered1"
     fi
 
     if [ -s "$TMP_SCAN_FILE" ]; then
@@ -115,52 +123,125 @@ scan_project() {
     return 0
 }
 
-cd "$PROJECT_DIR"
+prepare_publish_repo() {
+    mkdir -p "$PUBLISH_ROOT"
 
-[ -d .git ] || die "Not a git repo: $PROJECT_DIR"
+    if [ ! -d "$PUBLISH_REPO/.git" ]; then
+        log "Publish repo missing. Re-cloning: $PUBLISH_REPO"
+        rm -rf "$PUBLISH_REPO"
+        git clone "$REPO_URL" "$PUBLISH_REPO" >>"$LOG_FILE" 2>&1 || die "Clone failed."
+    fi
 
-log "Using default branch: $DEFAULT_BRANCH"
+    cd "$PUBLISH_REPO"
 
-if ! git remote get-url origin >/dev/null 2>&1; then
-    git remote add origin "$REPO_URL" >>"$LOG_FILE" 2>&1
-fi
+    if ! git remote get-url origin >/dev/null 2>&1; then
+        git remote add origin "$REPO_URL" >>"$LOG_FILE" 2>&1
+    else
+        git remote set-url origin "$REPO_URL" >>"$LOG_FILE" 2>&1
+    fi
+
+    if [ -d ".git/rebase-merge" ] || [ -d ".git/rebase-apply" ]; then
+        log "Interrupted rebase found. Aborting."
+        git rebase --abort >>"$LOG_FILE" 2>&1 || true
+    fi
+
+    if [ -f ".git/MERGE_HEAD" ]; then
+        log "Interrupted merge found. Aborting."
+        git merge --abort >>"$LOG_FILE" 2>&1 || true
+    fi
+
+    git fetch origin "$DEFAULT_BRANCH" --prune >>"$LOG_FILE" 2>&1 || die "Fetch failed."
+
+    if git show-ref --verify --quiet "refs/heads/$DEFAULT_BRANCH"; then
+        git checkout "$DEFAULT_BRANCH" >>"$LOG_FILE" 2>&1 || die "Checkout main failed."
+    else
+        git checkout -B "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH" >>"$LOG_FILE" 2>&1 || die "Create main failed."
+    fi
+}
+
+sync_project_to_publish_repo() {
+    cd "$PUBLISH_REPO"
+
+    command -v rsync >/dev/null 2>&1 || die "rsync is not installed."
+
+    log "Syncing from $PROJECT_DIR to $PUBLISH_REPO"
+
+    rsync -a --delete \
+        --exclude ".git/" \
+        --exclude ".gitignore" \
+        --exclude "*confidential*" \
+        --exclude "secrets/" \
+        --exclude ".env" \
+        --exclude "*.pem" \
+        --exclude "*.key" \
+        --exclude "patch-languagetools-scheduled-publish.sh" \
+        "$PROJECT_DIR"/ "$PUBLISH_REPO"/ >>"$LOG_FILE" 2>&1 || die "rsync failed."
+
+    {
+        echo "LanguageTools scheduled publish"
+        echo "TIME=$(date)"
+        echo "HOST=$(hostname)"
+        echo "USER=$(id -un)"
+        echo "SOURCE_PROJECT=$PROJECT_DIR"
+        echo "PUBLISH_REPO=$PUBLISH_REPO"
+    } > "$PUBLISH_REPO/code-version.txt"
+}
+
+publish_from_publish_repo() {
+    cd "$PUBLISH_REPO"
+
+    log "Publishing from PWD=$(pwd)"
+    log "Using default branch: $DEFAULT_BRANCH"
+
+    git status --short --branch >>"$LOG_FILE" 2>&1 || true
+
+    git add -A >>"$LOG_FILE" 2>&1
+
+    if git diff --cached --quiet; then
+        log "No changes to commit."
+    else
+        git commit -m "publish: sync public non-private files ($(date '+%Y%m%d-%H%M%S'))" >>"$LOG_FILE" 2>&1 || die "Commit failed."
+    fi
+
+    git pull --rebase --autostash origin "$DEFAULT_BRANCH" >>"$LOG_FILE" 2>&1 || die "Rebase failed."
+    git push -u origin "$DEFAULT_BRANCH" >>"$LOG_FILE" 2>&1 || die "Push failed."
+
+    LOCAL_HEAD="$(git rev-parse HEAD)"
+    REMOTE_HEAD="$(git ls-remote origin "refs/heads/$DEFAULT_BRANCH" | awk '{print $1}')"
+
+    report "LOCAL_HEAD=$LOCAL_HEAD"
+    report "REMOTE_HEAD=$REMOTE_HEAD"
+
+    if [ "$LOCAL_HEAD" = "$REMOTE_HEAD" ]; then
+        report "VERIFY_RESULT=PASS local HEAD matches origin/$DEFAULT_BRANCH"
+        log "VERIFY_RESULT=PASS local HEAD matches origin/$DEFAULT_BRANCH"
+        exit 0
+    else
+        report "VERIFY_RESULT=FAIL local HEAD does not match origin/$DEFAULT_BRANCH"
+        die "VERIFY_RESULT=FAIL local HEAD does not match origin/$DEFAULT_BRANCH"
+    fi
+}
+
+log "========================================"
+log "LANGUAGETOOLS SCHEDULED PUBLISH"
+log "TIME: $(date)"
+log "HOST: $(hostname)"
+log "USER: $(id -un)"
+log "UID: $(id -u)"
+log "START_PWD: $(pwd)"
+log "PROJECT_DIR: $PROJECT_DIR"
+log "PUBLISH_REPO: $PUBLISH_REPO"
+log "========================================"
+
+[ -d "$PROJECT_DIR" ] || die "Project directory missing: $PROJECT_DIR"
 
 if ! scan_project; then
     die "Sensitive or PII-like content found. Publish stopped."
 fi
 
-git add -A >>"$LOG_FILE" 2>&1
-
-if git diff --cached --quiet && git diff --quiet; then
-    log "No changes to commit."
-else
-    git commit -m "publish: sync public non-private files ($(date '+%Y%m%d-%H%M%S'))" >>"$LOG_FILE" 2>&1 || true
-fi
-
-git fetch origin >>"$LOG_FILE" 2>&1 || true
-
-# After reset-to-origin, this should be clean. Use --autostash for safety.
-git pull --rebase --autostash origin "$DEFAULT_BRANCH" >>"$LOG_FILE" 2>&1 || die "Rebase failed."
-
-git push -u origin "$DEFAULT_BRANCH" >>"$LOG_FILE" 2>&1 || die "Push failed."
-
-LOCAL_HEAD="$(git rev-parse HEAD)"
-REMOTE_HEAD="$(git ls-remote origin "refs/heads/$DEFAULT_BRANCH" | awk '{print $1}')"
-
-report "LOCAL_HEAD=$LOCAL_HEAD"
-report "REMOTE_HEAD=$REMOTE_HEAD"
-
-if [ "$LOCAL_HEAD" = "$REMOTE_HEAD" ]; then
-    report "VERIFY_RESULT=PASS local HEAD matches origin/$DEFAULT_BRANCH"
-    log "VERIFY_RESULT=PASS local HEAD matches origin/$DEFAULT_BRANCH"
-    exit 0
-else
-    report "VERIFY_RESULT=FAIL local HEAD does not match origin/$DEFAULT_BRANCH"
-    die "VERIFY_RESULT=FAIL local HEAD does not match origin/$DEFAULT_BRANCH"
-fi
-
+prepare_publish_repo
+sync_project_to_publish_repo
+publish_from_publish_repo
 
 # CHATGPT_SECRET_SCAN_FALSE_POSITIVE_REPAIR
 # If scheduled publish still fails, paste the new log to ChatGPT.
-# The recurring hits from May 5-7, 2026 appear to be scanner-pattern false positives:
-# run.sh and languagetools_scheduled_publish.sh contain the regex text used to detect secrets.

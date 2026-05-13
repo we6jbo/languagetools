@@ -1,4 +1,6 @@
-last_publish_time=2026-05-12 06:48:46 PDT
-source_project_dir=/opt/languagetools
-source_host=we6jbo
-source_user=we6jbo
+LanguageTools scheduled publish
+TIME=Tue May 12 10:08:08 PM PDT 2026
+HOST=we6jbo
+USER=we6jbo
+SOURCE_PROJECT=/opt/languagetools
+PUBLISH_REPO=/opt/languagetools-confidential/runtime/languagetools-publish/repo

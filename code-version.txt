@@ -1,6 +1,4 @@
-LanguageTools scheduled publish
-TIME=Wed May 13 12:05:35 AM PDT 2026
-HOST=we6jbo
-USER=we6jbo
-SOURCE_PROJECT=/opt/languagetools
-PUBLISH_REPO=/opt/languagetools-confidential/runtime/languagetools-publish/repo
+LanguageTools publish repair
+Time: Wed May 13 12:09:32 AM PDT 2026
+Host: we6jbo
+Source: /opt/languagetools

@@ -1,0 +1,5 @@
+rjUZjXJ
+STATUS=FAILED
+TIME=2026-05-12 22:18:40 PDT
+PROJECT_DIR=/opt/languagetools
+REPORT=/opt/languagetools-confidential/reports/direct-publish-repair-20260512-221837.txt

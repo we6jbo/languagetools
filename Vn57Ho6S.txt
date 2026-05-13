@@ -1,5 +1,2 @@
-rjUZjXJ
-STATUS=FAILED
-TIME=2026-05-12 22:18:40 PDT
-PROJECT_DIR=/opt/languagetools
-REPORT=/opt/languagetools-confidential/reports/direct-publish-repair-20260512-221837.txt
+SUCCESS 2026-05-13 00:04:46
+Log: /home/we6jbo/backup-this/languagetools-repair-20260513-000442/repair.log

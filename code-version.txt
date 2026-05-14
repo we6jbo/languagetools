@@ -1,4 +1,4 @@
-LanguageTools publish repair
-Published: 2026-05-14 06:12:38 PDT
-Host: we6jbo
-Source: /opt/languagetools
+LanguageTools code version
+Updated: 2026-05-14 06:51:35 PDT
+Git branch: main
+Git top-level: /opt/languagetools

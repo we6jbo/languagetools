@@ -1,0 +1,24 @@
+LanguageTools Project
+
+Purpose:
+This repository stores public, non-private LanguageTools project files.
+
+Public safety rule:
+Private data, credentials, tokens, personal logs, local diagnostic reports, and confidential files must not be uploaded to GitHub.
+
+Private/local locations:
+- /opt/languagetools-confidential
+- /opt/languagetools-may10
+- /home/we6jbo/backup-this
+
+Maintenance design:
+- Near-zero-cost stack
+- Bash + Git + GitHub
+- Optional Python Tk popup
+- Git should run directly in /opt/languagetools
+- No /tmp publish repository should be required
+
+Safety design:
+- Secret/PII scan before upload
+- Scanner must not block on its own scanner regex lines
+- Failure should create one copy/paste handoff for ChatGPT

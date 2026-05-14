@@ -1,41 +1,28 @@
-# Secrets / local runtime
+# LanguageTools local/private/generated safety ignores
+logs/
 *.log
-*.tmp
-*.bak
-*.swp
-*.swo
-*.pid
-*.db
-*.sqlite
-*.sqlite3
-*.key
-*.pem
-*.p12
-*.pfx
-*.crt
-*.csr
-*.ovpn
-*.kdbx
-*.asc
+
+# Never publish secrets or private reports
+*sensitive*
+*secret*hits*
+sensitive-info.txt
+private/
+confidential/
 .env
 .env.*
-secrets*
-secret*
-token*
-password*
-credential*
-credentials*
-private*
-cache/
-logs/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local generated handoff/status files
+rjUZjXJ.txt
+Vn57Ho6S.txt
+514*.txt
+tk-handoff*.txt
+
+# Python/cache/editor clutter
 __pycache__/
 *.pyc
-*.pyo
-*.class
-nohup.out
-
-# OS/editor
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
+*.swp
+*~

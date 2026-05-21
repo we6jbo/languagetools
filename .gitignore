@@ -26,3 +26,7 @@ __pycache__/
 *.pyc
 *.swp
 *~
+
+backup-before-*
+backup-before-self-scan-fix-*
+operationmay20.lock

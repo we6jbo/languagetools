@@ -1,5 +1,5 @@
 LanguageTools May20 GitHub visibility test
-Created/updated by may20_github_watch.py on 2026-05-20 20:49:29 PDT
-Add-date anchor: 2026-05-20
+Created/updated by may20_github_watch.py on 2026-05-25 00:33:40 PDT
+Add-date anchor: 2026-05-25
 Expected GitHub blob URL: https://github.com/we6jbo/languagetools/blob/main/test-file.txt
 Expected raw URL: https://raw.githubusercontent.com/we6jbo/languagetools/main/test-file.txt

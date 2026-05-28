@@ -242,7 +242,47 @@ write_handoff() {
         fi
     } > "$HANDOFF_FILE"
 
+    if command -v python3 >/dev/null 2>&1 && [ -n "${DISPLAY:-}" ]; then
+        python3 - "$HANDOFF_FILE" "$PROJECT_DIR/languagetools_scheduled_publish.sh" "$md5_script" <<'PY' >/dev/null 2>&1 || true
+import sys
+from pathlib import Path
+try:
+    import tkinter as tk
+except Exception:
+    raise SystemExit(0)
 
+handoff = Path(sys.argv[1])
+script_path = sys.argv[2]
+md5_value = sys.argv[3]
+text = handoff.read_text(errors="replace")
+
+root = tk.Tk()
+root.title("LanguageTools Operation May20 handoff - copy all")
+root.geometry("1050x760")
+
+header = (
+    "Copy all text below and paste it into ChatGPT.\n"
+    f"Operation May20 file: {script_path}\n"
+    f"MD5: {md5_value}\n"
+    "Tell ChatGPT: run operation may20 using this file and md5sum."
+)
+label = tk.Label(root, text=header, justify="left")
+label.pack(anchor="w", padx=10, pady=5)
+
+box = tk.Text(root, wrap="word")
+box.pack(fill="both", expand=True, padx=10, pady=10)
+box.insert("1.0", text)
+
+def copy_all():
+    root.clipboard_clear()
+    root.clipboard_append(box.get("1.0", "end-1c"))
+
+btn = tk.Button(root, text="Copy all", command=copy_all)
+btn.pack(pady=5)
+
+root.mainloop()
+PY
+    fi
 }
 
 fail() {
@@ -285,45 +325,18 @@ log "Current branch: $BRANCH"
 log "Fetching latest origin/$BRANCH."
 git fetch origin "$BRANCH" --prune >> "$LOGFILE" 2>&1 || fail "git fetch failed"
 
-log "Preparing safe backup before rebase."
-
-SAFE_BACKUP_DIR="/home/we6jbo/backup-this/languagetools-before-rebase-$(date '+%Y%m%d-%H%M%S')"
-mkdir -p "$SAFE_BACKUP_DIR"
-cp -a /opt/languagetools/. "$SAFE_BACKUP_DIR/" >> "$LOGFILE" 2>&1 || fail "could not create safety backup before rebase"
-
-log "Checking for local changes before rebase."
-
-if ! git diff --quiet || ! git diff --cached --quiet || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
-    log "Local changes found. Stashing tracked and untracked files before rebase."
-    git stash push --include-untracked -m "auto-stash-before-languagetools-rebase-$(date '+%Y%m%d-%H%M%S')" >> "$LOGFILE" 2>&1 || fail "could not stash local changes before rebase"
-    DID_AUTOSTASH="yes"
-else
-    log "No local changes found before rebase."
-    DID_AUTOSTASH="no"
-fi
-
 log "Rebasing before generated update."
+git rebase "origin/$BRANCH" >> "$LOGFILE" 2>&1 || fail "git rebase failed before generated update"
 
-git rebase "origin/$BRANCH" >> "$LOGFILE" 2>&1 || {
-    log "FAIL: git rebase failed before generated update."
-    echo "fail: git rebase failed before generated update at $(date '+%Y-%m-%d %H:%M:%S %Z')" > /opt/languagetools/git-rebase-recovery.fail
-    fail "git rebase failed before generated update"
-}
+log "Updating generated code-version.txt after rebase."
+{
+    echo "LanguageTools code version"
+    echo "Updated: $(date '+%Y-%m-%d %H:%M:%S %Z')"
+    echo "Git branch: $BRANCH"
+    echo "Git top-level: $GIT_TOPLEVEL"
+    echo "Operation May20 lock: $OPERATION_MAY20_LOCK"
+} > "$PROJECT_DIR/code-version.txt"
 
-if [[ "$DID_AUTOSTASH" == "yes" ]]; then
-    log "Rebase succeeded. Re-applying local stashed files."
-    git stash pop >> "$LOGFILE" 2>&1 || {
-        log "FAIL: rebase succeeded but stash pop failed. Manual review needed."
-        log "Backup folder: $SAFE_BACKUP_DIR"
-        echo "fail: git stash pop failed after successful rebase at $(date '+%Y-%m-%d %H:%M:%S %Z')" > /opt/languagetools/git-rebase-recovery.fail
-        fail "git stash pop failed after rebase"
-    }
-fi
-
-rm -f /opt/languagetools/git-rebase-recovery.fail
-echo "success: git rebase completed at $(date '+%Y-%m-%d %H:%M:%S %Z')" > /opt/languagetools/git-rebase-recovery.success
-
-log "Rebase completed successfully."
 [ -f "$PROJECT_DIR/code-about.txt" ] || fail "Missing code-about.txt"
 
 log "Running improved secret/PII scan."

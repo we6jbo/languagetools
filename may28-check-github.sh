@@ -2,7 +2,7 @@
 set -u
 
 BASE_DIR="/opt/languagetools"
-TEST_FILE="$BASE_DIR/tested-again.txt"
+TEST_FILE="$BASE_DIR/tested-again2.txt"
 LOG_FILE="$BASE_DIR/may28-check-github.log"
 
 GITHUB_URL="https://github.com"
@@ -30,10 +30,10 @@ gui_alert() {
 log_msg "may28-check-github.sh started."
 
 if [[ ! -f "$TEST_FILE" ]]; then
-    log_msg "tested-again.txt does not exist. Creating it now."
+    log_msg "tested-again2.txt does not exist. Creating it now."
     touch "$TEST_FILE"
 else
-    log_msg "tested-again.txt already exists."
+    log_msg "tested-again2.txt already exists."
 fi
 
 GITHUB_OK=0

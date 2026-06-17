@@ -1,0 +1,1 @@
+ I was able to remove the Tk messages for languagetools on 3PM Jun 16, 2026.

@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+
+# MASTERGUI_LANGUAGETOOLS_GUARD_PATCH_START
+if [ -f '/home/we6jbo/.mastergui_languagetools_guard/shell_guard.sh' ]; then
+  . '/home/we6jbo/.mastergui_languagetools_guard/shell_guard.sh'
+fi
+# MASTERGUI_LANGUAGETOOLS_GUARD_PATCH_END
+
 # LanguageTools scheduled publish
 # Clean Operation May20 version
 # This script intentionally avoids scanner self-matches and avoids publishing backup folders.

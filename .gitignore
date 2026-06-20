@@ -30,3 +30,4 @@ __pycache__/
 backup-before-*
 backup-before-self-scan-fix-*
 operationmay20.lock
+git-rebase-recovery.success
